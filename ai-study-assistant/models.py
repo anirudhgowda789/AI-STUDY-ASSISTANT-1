@@ -1,0 +1,1 @@
+# Reserved for future data structures (e.g., User classes, Quiz history)

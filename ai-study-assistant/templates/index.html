@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Study Assistant - Smart Learning Tool</title>
+
+<meta name="description" content="AI Study Assistant helps students summarize notes, generate quizzes, and learn faster using AI.">
+
+<meta name="keywords" content="AI study assistant, student AI tool, summarize notes, AI quiz generator">
+    <style>
+       :root {
+    --primary: #6366f1;       /* Modern Indigo */
+    --primary-hover: #4f46e5;
+    --bg-app: #f8fafc;
+    --bg-card: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 12px;
+    --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+body { 
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    margin: 0; 
+    background-color: var(--bg-app); 
+    color: var(--text-main);
+    line-height: 1.5;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px; 
+    margin: 40px auto;
+    background: var(--bg-card); 
+    padding: 40px; 
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+h1 { 
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary); 
+    text-align: center; 
+    margin-bottom: 30px;
+    letter-spacing: -0.02em;
+}
+
+h3 {
+    font-size: 1.1rem;
+    margin-top: 25px;
+    margin-bottom: 12px;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+}
+
+/* Customizing the File Input for better UX */
+input[type="file"] {
+    background: #f1f5f9;
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px dashed var(--border);
+    width: calc(100% - 24px);
+    margin-bottom: 10px;
+}
+
+textarea { 
+    width: 100%; 
+    height: 180px; 
+    padding: 15px; 
+    border: 1px solid var(--border); 
+    border-radius: var(--radius); 
+    resize: vertical;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-color: #fafafa;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    background-color: #fff;
+}
+
+.btn {
+    padding: 12px 24px; 
+    margin: 8px 8px 8px 0; 
+    cursor: pointer; 
+    background-color: var(--primary); 
+    color: white;
+    border: none; 
+    border-radius: 8px; 
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Secondary style for summary/quiz buttons */
+.btn + .btn {
+    background-color: #fff;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.btn + .btn:hover {
+    background-color: #f5f3ff;
+}
+
+#result { 
+    margin-top: 20px;
+    white-space: pre-wrap; 
+    background: #f8fafc;
+    padding: 25px; 
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    min-height: 100px;
+    color: #334155;
+    position: relative;
+}
+
+/* Visual cue for the result box */
+#result::before {
+    content: "AI RESPONSE";
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: var(--primary);
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.status { 
+    font-size: 0.85rem;
+    color: #10b981; /* Success Green */
+    margin-left: 10px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+    .container { padding: 20px; margin: 10px; }
+    .btn { width: 100%; margin-right: 0; }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Study Assistant</h1>
+        
+        <h3>1. Upload your PDF Document</h3>
+        <input type="file" id="pdf-file" accept=".pdf">
+        <button class="btn" onclick="uploadPDF()">Upload & Extract Text</button>
+        <span id="upload-status" class="status"></span>
+
+        <h3>2. Document Content</h3>
+        <p style="font-size: 14px; color: #666;">The extracted text will appear here. You can also paste text directly if you don't have a PDF.</p>
+        <textarea id="document-text" placeholder="Waiting for document..."></textarea>
+        
+        <h3>3. Study Options</h3>
+        <button class="btn" onclick="processText('summary')">Generate Summary</button>
+        <button class="btn" onclick="processText('quiz')">Generate Quiz</button>
+
+        <h3>AI Output</h3>
+        <div id="result">Your study materials will appear here...</div>
+    </div>
+
+    <script>
+        async function uploadPDF() {
+            const fileInput = document.getElementById('pdf-file');
+            const status = document.getElementById('upload-status');
+            const textOutput = document.getElementById('document-text');
+            
+            if (fileInput.files.length === 0) {
+                alert('Please select a PDF file first.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            status.innerText = "⏳ Uploading and extracting...";
+            status.style.color = "orange";
+            
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    textOutput.value = data.text; // Store the text in the visible textbox
+                    status.innerText = "✅ PDF processed successfully!";
+                    status.style.color = "green";
+                } else {
+                    status.innerText = "❌ Error: " + data.error;
+                    status.style.color = "red";
+                }
+            } catch (error) {
+                status.innerText = "❌ Upload failed.";
+                status.style.color = "red";
+            }
+        }
+
+        async function processText(actionType) {
+            const textInput = document.getElementById('document-text').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!textInput.trim()) {
+                alert("No document content found. Please upload a file or paste text first.");
+                return;
+            }
+
+            resultDiv.innerText = "⏳ Generating " + actionType + "... Please wait.";
+            
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // This perfectly connects the extracted text to the backend:
+                    body: JSON.stringify({ text: textInput, action: actionType })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    resultDiv.innerText = data.result;
+                } else {
+                    resultDiv.innerText = "❌ Error: " + data.error;
+                }
+            } catch (error) {
+                resultDiv.innerText = "❌ AI request failed to connect to the backend.";
+            }
+        }
+    </script>
+</body>
+</html>
