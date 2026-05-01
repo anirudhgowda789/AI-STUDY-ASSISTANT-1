@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Study Assistant</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background-color: #f9f9f9; color: #333; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        textarea { width: 100%; height: 200px; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; box-sizing: border-box; }
+        .btn { padding: 10px 20px; margin: 10px 5px 10px 0; cursor: pointer; background-color: #3498db; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        .btn:hover { background-color: #2980b9; }
+        #result { margin-top: 20px; white-space: pre-wrap; background: #ecf0f1; padding: 20px; border-radius: 4px; border-left: 5px solid #3498db; line-height: 1.6; }
+        .status { margin-left: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Study Assistant</h1>
+        
+        <h3>1. Upload your PDF Document</h3>
+        <input type="file" id="pdf-file" accept=".pdf">
+        <button class="btn" onclick="uploadPDF()">Upload & Extract Text</button>
+        <span id="upload-status" class="status"></span>
+
+        <h3>2. Document Content</h3>
+        <p style="font-size: 14px; color: #666;">The extracted text will appear here. You can also paste text directly if you don't have a PDF.</p>
+        <textarea id="document-text" placeholder="Waiting for document..."></textarea>
+        
+        <h3>3. Study Options</h3>
+        <button class="btn" onclick="processText('summary')">Generate Summary</button>
+        <button class="btn" onclick="processText('quiz')">Generate Quiz</button>
+
+        <h3>AI Output</h3>
+        <div id="result">Your study materials will appear here...</div>
+    </div>
+
+    <script>
+        // Update this URL to match your live backend URL (e.g., Render, Heroku, etc.)
+        const API_BASE_URL = 'https://your-api.onrender.com';
+
+        async function uploadPDF() {
+            const fileInput = document.getElementById('pdf-file');
+            const status = document.getElementById('upload-status');
+            const textOutput = document.getElementById('document-text');
+            
+            if (fileInput.files.length === 0) {
+                alert('Please select a PDF file first.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            status.innerText = "⏳ Uploading and extracting...";
+            status.style.color = "orange";
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    textOutput.value = data.text; // Store the text in the visible textbox
+                    status.innerText = "✅ PDF processed successfully!";
+                    status.style.color = "green";
+                } else {
+                    status.innerText = "❌ Error: " + data.error;
+                    status.style.color = "red";
+                }
+            } catch (error) {
+                status.innerText = "❌ Upload failed.";
+                status.style.color = "red";
+            }
+        }
+
+        async function processText(actionType) {
+            const textInput = document.getElementById('document-text').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!textInput.trim()) {
+                alert("No document content found. Please upload a file or paste text first.");
+                return;
+            }
+
+            resultDiv.innerText = "⏳ Generating " + actionType + "... Please wait.";
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/process`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // This perfectly connects the extracted text to the backend:
+                    body: JSON.stringify({ text: textInput, action: actionType })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    resultDiv.innerText = data.result;
+                } else {
+                    resultDiv.innerText = "❌ Error: " + data.error;
+                }
+            } catch (error) {
+                resultDiv.innerText = "❌ AI request failed to connect to the backend.";
+            }
+        }
+    </script>
+</body>
+</html>
